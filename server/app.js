@@ -27,19 +27,11 @@ const router = require('./router.js');
 // The string after mongodb://localhost is the database name. It can be anything you want.
 const dbURL = process.env.MONGODB_URI || 'mongodb://localhost/simpleMVCExample';
 
-// A number of options for Mongoose to turn on newer features supported by
-// newer version of MongoDB.
-const mongooseOptions = {
-  useNewUrlParser: true, 
-  useUnifiedTopology: true,
-  useCreateIndex: true,
-}
-
-// call mongoose's connect function and pass in the url and options object.
+// call mongoose's connect function and pass in the url.
 // If there are any errors connecting, we will throw it and kill the server.
 // Once connected, the mongoose package will stay connected for every file
 // that requires it in this project
-mongoose.connect(dbURL, mongooseOptions, (err) => {
+mongoose.connect(dbURL, (err) => {
   if (err) {
     console.log('Could not connect to database');
     throw err;
