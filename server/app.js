@@ -7,8 +7,6 @@ const express = require('express');
 const compression = require('compression');
 // favicon library to handle favicon requests
 const favicon = require('serve-favicon');
- // Library to parse cookies from the requests
-const cookieParser = require('cookie-parser');
 // library to handle POST requests any information sent in an HTTP body
 const bodyParser = require('body-parser');
 // Mongoose is one of the most popular MongoDB libraries for node
@@ -68,7 +66,7 @@ app.use(bodyParser.json());
 // set up the view (V of MVC) to use handlebars
 // You can use other view engines besides handlebars
 // We will also set the default layout to nothing
-app.engine('handlebars', expressHandlebars({
+app.engine('handlebars', expressHandlebars.engine({
   defaultLayout: '',
 }));
 app.set('view engine', 'handlebars');
@@ -79,9 +77,6 @@ app.set('views', `${__dirname}/../views`);
 
 // call favicon with the favicon path and tell the app to use it
 app.use(favicon(`${__dirname}/../client/img/favicon.png`));
-
-// call the cookie parser library and tell express to use it
-app.use(cookieParser());
 
 // pass our app to our router object to map the routes
 router(app);

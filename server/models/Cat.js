@@ -12,28 +12,32 @@ const mongoose = require('mongoose');
 // Usually you will retrieve data from the database through the Model object
 let CatModel = {};
 
-// A DB Schema to define our data structure
-// The schema really just defines a DB data structure.
-// In this case it also defines what functions/methods will be attached to objects that come
-// back from the database.
-// Schemas also add constraints to the fields so that you can enforce that
-// objects have fields of the right type
-// This should always be done since it ensures your variables will be the right type and
-// it helps prevent injection of invalid data
-// Schemas are made in JSON.
-// The name of the field will be the variable name for each object
-// The json of each field are the constraints around it
-// There are many constraints available
-// For example,
-// type is the data type (String, Number, Date, Boolean, etc).
-// required is whether or not the field is required to allow a document to be created
-// trim is whether or not the field should strip spaces before and after value
-// unique is whether or not the field must be a unique value
-// (meaning no two Cat object can have the same value for that field)
-// min is the minimum numeric value
-// max is the maximum numeric value
-// default is the default value if one is not provided
-// match is the format to match done through regex
+/* While Mongo is a schema-less database, meaning we can just store arbitrary objects in it, Mongoose
+   does implement a schema system. If you wanted to just store arbitrary objects you could just use
+   the mongoDB NodeJS driver: https://www.npmjs.com/package/mongodb
+
+   Information about the differences between MongoDB Driver and Mongoose found here:
+   https://www.mongodb.com/developer/article/mongoose-versus-nodejs-driver/
+
+   The schema enforces a semi-rigid format on our data so that it is more of a "known quantity". This
+   puts us somewhere between the very rigid SQL format and the very loose Mongo format.
+
+   To create the schema we give it an object. Each top level key (like name, bedsOwned, and createdDate)
+   defines a variable our objects can have. We then use individual objects to define the features and parameters
+   of each one of those variables.
+
+   For our name, we define a type of String. This means name is a string. Since mongo stores javascript
+   objects, the type usually does not matter. However, this is something added by Mongoose to clarify what each
+   variable should contain. We also give it the required option, which means every object in the cat database MUST
+   have a name. We set the trim option to true, which will remove trailing and leading whitespace from the string.
+   Finally we set the unique option to true. This means that there cannot be two cats with the same name.
+
+   For our bedsOwned, we say it is a number. We set the minimum value to 0. We say it is required.
+
+   For our createdDate, we want to store the time that the cat was first added to the database. Rather than
+   figure that out in our own code when we create each cat, we can instead set it's default to the Date.now function.
+   When a new cat is made, it will execute the default function and return the current date.
+*/
 const CatSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -54,26 +58,6 @@ const CatSchema = new mongoose.Schema({
   },
 
 });
-
-// Schema.statics are static methods attached to the Model or objects
-// These DO NOT have their own instance. They are all the static function.
-// They do not look at individual instance variables since there is
-// no instance of them. Every static function
-// only exists once and is called.
-// In this case, findByName will be attached to the model and objects.
-// They will be able to call this function, but they won't be able to
-// reference any instance variables of that object (or at least accurately)
-// These are used when you want a public function you can call to do a task,
-// not a method that uses or returns instance variables
-// That is, these are used when you don't need an object, just a function to call.
-CatSchema.statics.findByName = (name, callback) => {
-  const search = {
-    name,
-  };
-
-  return CatModel.findOne(search, callback);
-};
-
 // Create the cat model based on the schema. You provide it with a custom discriminator
 // (the name of the object type. Can be anything)
 // and the schema to make a model from.
@@ -81,6 +65,5 @@ CatSchema.statics.findByName = (name, callback) => {
 CatModel = mongoose.model('Cat', CatSchema);
 
 
-// export our public properties
-module.exports.CatModel = CatModel;
-module.exports.CatSchema = CatSchema;
+// We only want to export the cat model, so we can overwrite the entire exports object.
+module.exports = CatModel;

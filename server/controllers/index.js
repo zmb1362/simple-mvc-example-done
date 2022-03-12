@@ -2,7 +2,7 @@
 const models = require('../models');
 
 // get the Cat model
-const Cat = models.Cat.CatModel;
+const Cat = models.Cat;
 
 // default fake data so that we have something to work with until we make a real Cat
 const defaultData = {
@@ -13,16 +13,11 @@ const defaultData = {
 // object for us to keep track of the last Cat we made and dynamically update it sometimes
 let lastAdded = new Cat(defaultData);
 
-// function to handle requests to the main page
-// controller functions in Express receive the full HTTP request
-// and a pre-filled out response object to send
+// Function to handle rendering the index page.
 const hostIndex = (req, res) => {
-  // res.render takes a name of a page to render.
-  // These must be in the folder you specified as views in your main app.js file
-  // Additionally, you don't need .jade because you registered the
-  // file type in the app.js as jade. Calling res.render('index')
-  // actually calls index.jade. A second parameter of JSON can be passed
-  // into the jade to be used as variables with #{varName}
+  /* res.render will render the given view from the views folder. In this case, index.
+     We pass it a number of variables to populate the page.
+  */
   res.render('index', {
     currentName: lastAdded.name,
     title: 'Home',
@@ -30,220 +25,218 @@ const hostIndex = (req, res) => {
   });
 };
 
-// function to find all cats on request.
-// Express functions always receive the request and the response.
-const readAllCats = (req, res, callback) => {
-  // Call the model's built in find function and provide it a
-  // callback to run when the query is complete
-  // Find has several versions
-  // one parameter is just the callback
-  // two parameters is JSON of search criteria and callback.
-  // That limits your search to only things that match the criteria
-  // The find function returns an array of matching objects
-  // The lean function will force find to return data in the js
-  // object format, rather than the Mongo document format.
-  Cat.find(callback).lean();
+// Function for rendering the page1 template
+// Page1 has a loop that iterates over an array of cats
+const hostPage1 = async (req, res) => {
+  /* Remember that our database is an entirely separate server from our node
+     code. That means all interactions with it are async, and just because our
+     server is up doesn't mean our database is. Therefore, any time we
+     interact with it, we need to account for scenarios where it is not working.
+     That is why the code below is wrapped in a try/catch statement.
+  */
+  try{
+    /* We want to find all the cats in the Cat database. To do this, we need
+       to make a "query" or a search. Queries in Mongoose are "thenable" which
+       means they work like promises. Since they work like promises, we can also
+       use await/async with them.
+
+       The result of any query will either throw an error, or return zero, one, or
+       multiple "documents". Documents are what our database stores. It is often
+       abbreviated to "doc" or "docs" (one or multiple).
+
+       .find() is a function in all Mongoose models (like our Cat model). It takes
+       in an object as a parameter that defines the search. In this case, we want
+       to find every cat, so we give it an empty object because that will not filter
+       out any cats.
+
+       .lean() is a modifier for the find query. Instead of returning entire mongoose
+       documents, .lean() will only return the JS Objects being stored. Try printing
+       out docs with and without .lean() to see the difference.
+
+       .exec() executes the chain of operations. It is not strictly necessary and
+       can be removed. However, mongoose gives better error messages if we use it.
+    */
+    const docs = await Cat.find({}).lean().exec();
+
+    // Once we get back the docs array, we can send it to page1.
+    return res.render('page1', {cats: docs});
+  } catch (err) {
+    /* If our database returns an error, or is unresponsive, we will print that error to
+       our console for us to see. We will also send back an error message to the client.
+
+       We don't want to send back the err from mongoose, as that would be unsafe. You
+       do not want people to see actual error messages from your server or database, or else
+       they can exploit them to attack your server.
+    */
+    console.log(err);
+    return res.status(500).json({error: 'failed to find cats'});
+  }
 };
 
-
-// function to find a specific cat on request.
-// Express functions always receive the request and the response.
-const readCat = (req, res) => {
-  const name1 = req.query.name;
-
-  // function to call when we get objects back from the database.
-  // With Mongoose's find functions, you will get an err and doc(s) back
-  const callback = (err, doc) => {
-    if (err) {
-      return res.status(500).json({ err }); // if error, return it
-    }
-
-    // return success
-    return res.json(doc);
-  };
-
-  // Call the static function attached to CatModels.
-  // This was defined in the Schema in the Model file.
-  // This is a custom static function added to the CatModel
-  // Behind the scenes this runs the findOne method.
-  // You can find the findByName function in the model file.
-  Cat.findByName(name1, callback);
-};
-
-// function to handle requests to the page1 page
-// controller functions in Express receive the full HTTP request
-// and a pre-filled out response object to send
-const hostPage1 = (req, res) => {
-  // function to call when we get objects back from the database.
-  // With Mongoose's find functions, you will get an err and doc(s) back
-  const callback = (err, docs) => {
-    if (err) {
-      return res.status(500).json({ err }); // if error, return it
-    }
-
-    // return success
-    return res.render('page1', { cats: docs });
-  };
-
-  readAllCats(req, res, callback);
-};
-
-// function to handle requests to the page2 page
-// controller functions in Express receive the full HTTP request
-// and a pre-filled out response object to send
+// Function to render the untemplated page2.
 const hostPage2 = (req, res) => {
-  // res.render takes a name of a page to render.
-  // These must be in the folder you specified as views in your main app.js file
-  // Additionally, you don't need .jade because you registered
-  // the file type in the app.js as jade. Calling res.render('index')
-  // actually calls index.jade. A second parameter of JSON can be
-  // passed into the jade to be used as variables with #{varName}
   res.render('page2');
 };
 
-// function to handle requests to the page3 page
-// controller functions in Express receive the full HTTP request
-// and a pre-filled out response object to send
+// Function to render the untemplated page3.
 const hostPage3 = (req, res) => {
-    // res.render takes a name of a page to render.
-    // These must be in the folder you specified as views in your main app.js file
-    // Additionally, you don't need .jade because you registered the file type
-    // in the app.js as jade. Calling res.render('index')
-    // actually calls index.jade. A second parameter of JSON can be passed
-    // into the jade to be used as variables with #{varName}
   res.render('page3');
 };
 
-// function to handle get request to send the name
-// controller functions in Express receive the full HTTP request
-// and a pre-filled out response object to send
+// Get name will return the name of the last added cat.
 const getName = (req, res) => {
-  // res.json returns json to the page.
-  // Since this sends back the data through HTTP
-  // you can't send any more data to this user until the next response
-  res.json({ name: lastAdded.name });
+  return res.json({ name: lastAdded.name });
 };
 
-// function to handle a request to set the name
-// controller functions in Express receive the full HTTP request
-// and get a pre-filled out response object to send
-// ADDITIONALLY, with body-parser we will get the
-// body/form/POST data in the request as req.body
+// Function to create a new cat in the database
 const setName = (req, res) => {
-  // check if the required fields exist
-  // normally you would also perform validation
-  // to know if the data they sent you was real
+  /* If we look at views/page2.handlebars, the form has inputs for a firstname, lastname
+     and a number of beds. When this POST request is sent to us, the bodyParser plugin
+     we configured in app.js will store that information in req.body for us.
+  */
   if (!req.body.firstname || !req.body.lastname || !req.body.beds) {
-    // if not respond with a 400 error
-    // (either through json or a web page depending on the client dev)
-    return res.status(400).json({ error: 'firstname,lastname and beds are all required' });
+    // If they are missing data, send back an error.
+    return res.status(400).json({ error: 'firstname, lastname and beds are all required' });
   }
 
-  // if required fields are good, then set name
-  const name = `${req.body.firstname} ${req.body.lastname}`;
-
-  // dummy JSON to insert into database
+  /* If they did send all the data, we want to create a cat and add it to our database.
+     We begin by creating a cat that matches the format of our Cat schema. In this case,
+     we define a name and bedsOwned. We don't need to define the createdDate, because the
+     default Date.now function will populate that value for us later.
+  */
   const catData = {
-    name,
+    name: `${req.body.firstname} ${req.body.lastname}`,
     bedsOwned: req.body.beds,
   };
 
-  // create a new object of CatModel with the object to save
+  /* Once we have our cat object set up. We want to turn it into something the database
+     can understand. To do this, we create a new instance of a Cat using the Cat model
+     exported from the Models folder.
+
+     Note that this does NOT store the cat in the database. That is the next step.
+  */
   const newCat = new Cat(catData);
 
-  // create new save promise for the database
-  const savePromise = newCat.save();
+  /* We have now setup a cat in the right format. We now want to store it in the database.
+     Again, because the database and node server are separate things entirely we have no
+     way of being sure the database will work or respond. Because of that, we wrap our code
+     in a try/catch.
+  */
+  try {
+    /* newCat is a version of our catData that is database-friendly. If you print it, you will
+       see it has extra information attached to it other than name and bedsOwned. One thing it
+       now has is a .save() function. This function will intelligently add or update the cat in
+       the database. Since we have never saved this cat before, .save() will create a new cat in
+       the database. All calls to the database are async, including .save() so we will await the
+       databases response. If something goes wrong, we will end up in our catch() statement.
+    */
+    await newCat.save();
 
-  savePromise.then(() => {
-    // set the lastAdded cat to our newest cat object.
-    // This way we can update it dynamically
+    /* After our await has resolved, and if no errors have occured during the await, we will end
+       up here. We will update our lastAdded cat to the one we just added. We will then send that
+       cat's data to the client.
+    */
     lastAdded = newCat;
-    // return success
-    res.json({ name: lastAdded.name, beds: lastAdded.bedsOwned });
-  });
+    return res.json({
+      name: lastAdded.name,
+      beds: lastAdded.bedsOwned,
+    });
+  } catch (err) {
+    // If something goes wrong while communicating with the database, log the error and send
+    // an error message back to the client.
+    console.log(err);
+    return res.status(500).json({error: 'failed to create cat'});
+  }
 
-  // if error, return it
-  savePromise.catch((err) => res.status(500).json({ err }));
-
+  // Return res to satisfy eslint.
   return res;
 };
 
+// Function to handle searching a cat by name.
+const searchName = async (req, res) => {
+  /* When the user makes a POST request, bodyParser populates req.body with the parameters
+     as we saw in setName() above. In the case of searchName, the user is making a GET request.
+     GET requests do not have a body, but they can have query parameters. bodyParser will also
+     handle these, and store them in req.query instead.
 
-// function to handle requests search for a name and return the object
-// controller functions in Express receive the full HTTP request
-// and a pre-filled out response object to send
-const searchName = (req, res) => {
-  // check if there is a query parameter for name
-  // BUT WAIT!!?!
-  // Why is this req.query and not req.body like the others
-  // This is a GET request. Those come as query parameters in the URL
-  // For POST requests like the other ones in here, those come in a
-  // request body because they aren't a query
-  // POSTS send data to add while GETS query for a page or data (such as a search)
+     If the user does not give us a name to search by, throw an error.
+  */
   if (!req.query.name) {
     return res.status(400).json({ error: 'Name is required to perform a search' });
   }
 
-  // Call our Cat's static findByName function.
-  // Since this is a static function, we can just call it without an object
-  // pass in a callback (like we specified in the Cat model
-  // Normally would you break this code up, but I'm trying to keep it
-  // together so it's easier to see how the system works
-  // For that reason, I gave it an anonymous callback instead of a
-  // named function you'd have to go find
-  return Cat.findByName(req.query.name, (err, doc) => {
-    // errs, handle them
-    if (err) {
-      return res.status(500).json({ err }); // if error, return it
+  /* If they do give us a name to search, we will as the database for a cat with that name.
+     Remember that since we are interacting with the database, we want to wrap our code in a
+     try/catch in case the database throws an error or doesn't respond.
+  */
+  try{
+    /* Just like Cat.find() in hostPage1() above, Mongoose models also have a .findOne()
+       that will find a single document in the database that matches the search parameters.
+       This function is faster, as it will stop searching after it finds one document that
+       matches the parameters. The downside is you cannot get multiple responses with it.
+
+       One of three things will occur when trying to findOne in the database.
+        1) An error will be thrown, which will stop execution of the try block and move to the catch block.
+        2) Everything works, but the name was not found in the database returning an empty doc object.
+        3) Everything works, and an object matching the search is found.
+    */
+    const doc = await Cat.findOne({name: req.query.name}).exec();
+
+    // If we do not find something that matches our search, doc will be empty.
+    if(!doc) {
+      return res.json({error: 'No cats found'});
     }
 
-    // if no matches, let them know
-    // (does not necessarily have to be an error since technically it worked correctly)
-    if (!doc) {
-      return res.json({ error: 'No cats found' });
-    }
+    // Otherwise, we got a result and will send it back to the user.
+    return res.json({name: doc.name, beds: doc.bedsOwned});
+  } catch (err) {
+    // If there is an error, log it and send the user an error message.
+    console.log(err);
+    return res.status(500).json({error: 'Something went wrong'});
+  }
+};
 
-    // if a match, send the match back
-    return res.json({ name: doc.name, beds: doc.bedsOwned });
+/* A function for updating the last cat added to the database.
+   Usually database updates would be a more involved process, involving finding
+   the right element in the database based on query, modifying it, and updating
+   it. For this example we will just update the last one we added for simplicity.
+*/
+const updateLast = (req, res) => {
+  // First we will update the number of bedsOwned.
+	lastAdded.bedsOwned++;
+
+  /* Remember that lastAdded is a Mongoose document (made on line 14 if no new
+     ones were made after the server started, or line 118 if there was). Mongo
+     documents have an _id, which is a globally unique identifier that distinguishes
+     them from other documents. Our mongoose document also has this _id. When we
+     call .save() on a document, Mongoose and Mongo will use the _id to determine if
+     we are creating a new database entry (if the _id doesn't already exist), or 
+     if we are updating an existing entry (if the _id is already in the database).
+
+     Since lastAdded is likely already in the database, .save() will update it rather
+     than make a new cat.
+
+     We can use async/await for this, or just use standard promise .then().catch() syntax.
+  */
+  const savePromise = lastAdded.save();
+  
+  // If we successfully save/update them in the database, send back the cat's info.
+  savePromise.then(() => {
+    return res.json({
+      name: lastAdded.name,
+      beds: lastAdded.bedsOwned,
+    });
+  });
+
+  // If something goes wrong saving to the database, log the error and send a message to the client.
+  savePromise.catch((err) => {
+    console.log(err);
+    return res.status(500).json({error: 'Something went wrong'});
   });
 };
 
-// function to handle a request to update the last added object
-// this PURELY exists to show you how to update a model object
-// Normally for an update, you'd get data from the client,
-// search for an object, update the object and put it back
-// We will skip straight to updating an object
-// (that we stored as last added) and putting it back
-const updateLast = (req, res) => {
-  // Your model is JSON, so just change a value in it.
-  // This is the benefit of ORM (mongoose) and/or object documents (Mongo NoSQL)
-  // You can treat objects just like that - objects.
-  // Normally you'd find a specific object, but we will only
-  // give the user the ability to update our last object
-  lastAdded.bedsOwned++;
-
-  // once you change all the object properties you want,
-  // then just call the Model object's save function
-  // create a new save promise for the database
-  const savePromise = lastAdded.save();
-
-  // send back the name as a success for now
-  savePromise.then(() => res.json({ name: lastAdded.name, beds: lastAdded.bedsOwned }));
-
-  // if save error, just return an error for now
-  savePromise.catch((err) => res.status(500).json({ err }));
-};
-
-// function to handle a request to any non-real resources (404)
-// controller functions in Express receive the full HTTP request
-// and get a pre-filled out response object to send
+// A function to send back the 404 page.
 const notFound = (req, res) => {
-  // res.render takes a name of a page to render.
-  // These must be in the folder you specified as views in your main app.js file
-  // Additionally, you don't need .jade because you registered the file type
-  // in the app.js as jade. Calling res.render('index')
-  // actually calls index.jade. A second parameter of JSON can be passed into
-  // the jade to be used as variables with #{varName}
   res.status(404).render('notFound', {
     page: req.url,
   });
@@ -255,7 +248,6 @@ module.exports = {
   page1: hostPage1,
   page2: hostPage2,
   page3: hostPage3,
-  readCat,
   getName,
   setName,
   updateLast,
