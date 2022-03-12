@@ -36,7 +36,6 @@ mongoose.connect(dbURL, (err) => {
   }
 });
 
-
 // Port set by process.env.PORT environment variable.
 // If the process.env.PORT variable or the env.NODE_PORT variables do not exist, use port 3000
 const port = process.env.PORT || process.env.NODE_PORT || 3000;
@@ -83,10 +82,9 @@ router(app);
 
 // Tell the app to listen on the specified port
 app.listen(port, (err) => {
-    // if the app fails, throw the err
+  // if the app fails, throw the err
   if (err) {
     throw err;
   }
   console.log(`Listening on port ${port}`);
 });
-

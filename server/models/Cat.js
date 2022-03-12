@@ -64,6 +64,5 @@ const CatSchema = new mongoose.Schema({
 // Look at the model variable definition above for more details.
 CatModel = mongoose.model('Cat', CatSchema);
 
-
 // We only want to export the cat model, so we can overwrite the entire exports object.
 module.exports = CatModel;

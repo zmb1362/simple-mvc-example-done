@@ -2,7 +2,7 @@
 const models = require('../models');
 
 // get the Cat model
-const Cat = models.Cat;
+const { Cat } = models;
 
 // default fake data so that we have something to work with until we make a real Cat
 const defaultData = {
@@ -34,7 +34,7 @@ const hostPage1 = async (req, res) => {
      interact with it, we need to account for scenarios where it is not working.
      That is why the code below is wrapped in a try/catch statement.
   */
-  try{
+  try {
     /* We want to find all the cats in the Cat database. To do this, we need
        to make a "query" or a search. Queries in Mongoose are "thenable" which
        means they work like promises. Since they work like promises, we can also
@@ -59,7 +59,7 @@ const hostPage1 = async (req, res) => {
     const docs = await Cat.find({}).lean().exec();
 
     // Once we get back the docs array, we can send it to page1.
-    return res.render('page1', {cats: docs});
+    return res.render('page1', { cats: docs });
   } catch (err) {
     /* If our database returns an error, or is unresponsive, we will print that error to
        our console for us to see. We will also send back an error message to the client.
@@ -69,7 +69,7 @@ const hostPage1 = async (req, res) => {
        they can exploit them to attack your server.
     */
     console.log(err);
-    return res.status(500).json({error: 'failed to find cats'});
+    return res.status(500).json({ error: 'failed to find cats' });
   }
 };
 
@@ -84,12 +84,10 @@ const hostPage3 = (req, res) => {
 };
 
 // Get name will return the name of the last added cat.
-const getName = (req, res) => {
-  return res.json({ name: lastAdded.name });
-};
+const getName = (req, res) => res.json({ name: lastAdded.name });
 
 // Function to create a new cat in the database
-const setName = (req, res) => {
+const setName = async (req, res) => {
   /* If we look at views/page2.handlebars, the form has inputs for a firstname, lastname
      and a number of beds. When this POST request is sent to us, the bodyParser plugin
      we configured in app.js will store that information in req.body for us.
@@ -145,11 +143,8 @@ const setName = (req, res) => {
     // If something goes wrong while communicating with the database, log the error and send
     // an error message back to the client.
     console.log(err);
-    return res.status(500).json({error: 'failed to create cat'});
+    return res.status(500).json({ error: 'failed to create cat' });
   }
-
-  // Return res to satisfy eslint.
-  return res;
 };
 
 // Function to handle searching a cat by name.
@@ -169,7 +164,7 @@ const searchName = async (req, res) => {
      Remember that since we are interacting with the database, we want to wrap our code in a
      try/catch in case the database throws an error or doesn't respond.
   */
-  try{
+  try {
     /* Just like Cat.find() in hostPage1() above, Mongoose models also have a .findOne()
        that will find a single document in the database that matches the search parameters.
        This function is faster, as it will stop searching after it finds one document that
@@ -180,19 +175,19 @@ const searchName = async (req, res) => {
         2) Everything works, but the name was not found in the database returning an empty doc object.
         3) Everything works, and an object matching the search is found.
     */
-    const doc = await Cat.findOne({name: req.query.name}).exec();
+    const doc = await Cat.findOne({ name: req.query.name }).exec();
 
     // If we do not find something that matches our search, doc will be empty.
-    if(!doc) {
-      return res.json({error: 'No cats found'});
+    if (!doc) {
+      return res.json({ error: 'No cats found' });
     }
 
     // Otherwise, we got a result and will send it back to the user.
-    return res.json({name: doc.name, beds: doc.bedsOwned});
+    return res.json({ name: doc.name, beds: doc.bedsOwned });
   } catch (err) {
     // If there is an error, log it and send the user an error message.
     console.log(err);
-    return res.status(500).json({error: 'Something went wrong'});
+    return res.status(500).json({ error: 'Something went wrong' });
   }
 };
 
@@ -203,14 +198,14 @@ const searchName = async (req, res) => {
 */
 const updateLast = (req, res) => {
   // First we will update the number of bedsOwned.
-	lastAdded.bedsOwned++;
+  lastAdded.bedsOwned++;
 
   /* Remember that lastAdded is a Mongoose document (made on line 14 if no new
-     ones were made after the server started, or line 118 if there was). Mongo
+     ones were made after the server started, or line 116 if there was). Mongo
      documents have an _id, which is a globally unique identifier that distinguishes
      them from other documents. Our mongoose document also has this _id. When we
      call .save() on a document, Mongoose and Mongo will use the _id to determine if
-     we are creating a new database entry (if the _id doesn't already exist), or 
+     we are creating a new database entry (if the _id doesn't already exist), or
      if we are updating an existing entry (if the _id is already in the database).
 
      Since lastAdded is likely already in the database, .save() will update it rather
@@ -219,19 +214,17 @@ const updateLast = (req, res) => {
      We can use async/await for this, or just use standard promise .then().catch() syntax.
   */
   const savePromise = lastAdded.save();
-  
+
   // If we successfully save/update them in the database, send back the cat's info.
-  savePromise.then(() => {
-    return res.json({
-      name: lastAdded.name,
-      beds: lastAdded.bedsOwned,
-    });
-  });
+  savePromise.then(() => res.json({
+    name: lastAdded.name,
+    beds: lastAdded.bedsOwned,
+  }));
 
   // If something goes wrong saving to the database, log the error and send a message to the client.
   savePromise.catch((err) => {
     console.log(err);
-    return res.status(500).json({error: 'Something went wrong'});
+    return res.status(500).json({ error: 'Something went wrong' });
   });
 };
 
